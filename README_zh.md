@@ -1,10 +1,10 @@
 # TeleAgent Skills
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-6-green.svg)]()
+[![Skills](https://img.shields.io/badge/Skills-7-green.svg)]()
 [![Compatible](https://img.shields.io/badge/Compatible-TeleAgent%20%7C%20Claude%20Code%20%7C%20Cursor%20%7C%20OpenClaw-orange)]()
 
-> **面向AI驱动业务流程的生产级Agent技能组件** — 开箱即用，支持4阶段编排、可配置规则、多源证据分析、自然语言转SQL和交互式可视化。
+> **面向AI驱动业务流程的生产级Agent技能组件** — 开箱即用，支持4阶段编排、可配置规则、多源证据分析、自然语言转SQL、交互式可视化，以及**多Agent通信**（Redis消息总线 + GitHub异步交接）。
 
 ## 为什么选择 TeleAgent Skills？
 
@@ -33,6 +33,8 @@ cp -r teleagent-skills/skills/scoring-engine ~/.config/TeleAgent/skills/
 | [数据聚合器](skills/data-aggregator/) | 统计聚合与同比环比分析 | 业务报表、趋势分析、KPI看板 |
 | [可视化渲染器](skills/visualization-renderer/) | 自动图表推荐 + 交互式ECharts HTML | 数据看板、报表可视化、演示汇报 |
 | [自然语言查询](skills/nl2-query/) | 自然语言转结构化查询，含置信度评分 | 自助数据查询、商业智能 |
+| [Redis消息总线](skills/redis-message-bus/) | 全异步Redis Pub/Sub + Stream消息总线 | 多Agent广播、持久化队列、服务发现 |
+| [GitHub异步交接](skills/github-async-handoff/) | 基于GitHub Issues + Git分支的去中心化异步任务交接 | 跨时区协作、零部署任务队列、CI/CD交接 |
 
 ## 架构
 
@@ -98,14 +100,39 @@ cp -r teleagent-skills/skills/scoring-engine ~/.config/TeleAgent/skills/
       WHERE month='2026-05' GROUP BY plan ORDER BY ticket_count DESC LIMIT 10
 ```
 
+### Redis消息总线 — 多Agent广播
+```python
+from redis_message_bus import MessageBus
+
+bus = MessageBus(redis_url="redis://localhost:6379/0", node_id="agent-alpha")
+await bus.start()
+await bus.publish("agent:broadcast", {"type": "config_update", "key": "threshold", "value": 0.85})
+await bus.send_to_stream("agent:persistent", {"task_id": "task-001", "action": "analyze"})
+```
+
+### GitHub异步交接 — 跨时区任务交接
+```python
+from github_async_handoff import HandoffClient
+
+handoff = HandoffClient(repo="your-org/agent-workspace", token="ghp_xxxx")
+issue = handoff.create_handoff(
+    title="[Handoff] 数据分析报告初稿",
+    body="初稿完成，等待审核",
+    labels=["handoff", "review-pending"],
+)
+# 另一个Agent认领并完成：
+handoff.claim_handoff(issue_number=issue.number, assignee="agent-beta")
+handoff.complete_handoff(issue_number=issue.number, summary="审核通过")
+```
+
 ## 行业应用场景
 
-| 行业 | 评分引擎 | 证据链 | 数据聚合器 | 可视化渲染器 | 自然语言查询 |
-|------|---------|--------|-----------|------------|------------|
-| 金融服务 | 信用评分、风险评级 | 欺诈调查、理赔验证 | 投资组合分析 | 风险看板 | "显示高风险账户" |
-| 制造业 | 供应商评估 | 设备故障诊断 | 产线统计 | 质量看板 | "哪条产线缺陷最多？" |
-| 零售 | 门店评分 | 客诉分析 | 销售分析 | 业绩看板 | "收入前十的门店" |
-| 医疗 | 患者风险评估 | 不良事件调查 | 临床统计 | 结局看板 | "各科室再入院率" |
+| 行业 | 评分引擎 | 证据链 | 数据聚合器 | 可视化渲染器 | 自然语言查询 | Redis消息总线 | GitHub异步交接 |
+|------|---------|--------|-----------|------------|------------|--------------|---------------|
+| 金融服务 | 信用评分、风险评级 | 欺诈调查、理赔验证 | 投资组合分析 | 风险看板 | "显示高风险账户" | 风险事件广播、分析调度 | 跨时区分析师交接 |
+| 制造业 | 供应商评估 | 设备故障诊断 | 产线统计 | 质量看板 | "哪条产线缺陷最多？" | IoT告警广播、产线同步 | CI/CD构建-测试-部署链 |
+| 零售 | 门店评分 | 客诉分析 | 销售分析 | 业绩看板 | "收入前十的门店" | 促销广播、库存同步 | 供应商-订单异步交接 |
+| 医疗 | 患者风险评估 | 不良事件调查 | 临床统计 | 结局看板 | "各科室再入院率" | 告警广播、值班交接 | 跨团队患者案例交接 |
 
 ## 参与贡献
 
