@@ -1,0 +1,135 @@
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  secret-scan:
+    name: Secret & PII Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for potential secrets..."
+          SECRETS_FOUND=0
+          
+          # API keys and tokens
+          if git diff --cached --diff-filter=ACMR -z -- . | xargs -0 -I{} sh -c '
+            grep -rnE "(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|private[_-]?key|secret[_-]?key)\s*[:=]\s*['\''"][^'\''\"]{8,}" {} 2>/dev/null
+          '; then
+            echo "::error::Potential hardcoded secret detected"
+            SECRETS_FOUND=1
+          fi
+          
+          # AWS keys
+          if grep -rnE "AKIA[0-9A-Z]{16}" -- . 2>/dev/null; then
+            echo "::error::Potential AWS access key detected"
+            SECRETS_FOUND=1
+          fi
+          
+          # Generic high-entropy strings (potential keys)
+          if grep -rnE "(sk-|pk-|ghp_|gho_|glpat-|xox[bpsa]-)[a-zA-Z0-9_-]{20,}" -- . 2>/dev/null; then
+            echo "::error::Potential API key or token detected"
+            SECRETS_FOUND=1
+          fi
+          
+          if [ "$SECRETS_FOUND" -ne 0 ]; then
+            echo "Security scan FAILED: secrets detected"
+            exit 1
+          fi
+          echo "No hardcoded secrets found"
+
+      - name: Check for PII patterns
+        run: |
+          echo "Scanning for potential PII..."
+          PII_FOUND=0
+          
+          # Chinese phone numbers
+          if grep -rnE "1[3-9][0-9]{9}" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.md" -- . 2>/dev/null | grep -v "138\*\*\*\*1234" | grep -v "example" | grep -v "placeholder"; then
+            echo "::warning::Potential real phone number detected (verify manually)"
+          fi
+          
+          # Chinese ID numbers
+          if grep -rnE "[0-9]{17}[0-9Xx]" --include="*.json" --include="*.yaml" --include="*.yml" -- . 2>/dev/null | grep -v "XXXXXXXXXXXX" | grep -v "example"; then
+            echo "::warning::Potential real ID number detected (verify manually)"
+          fi
+          
+          # Real email addresses (excluding example.com)
+          if grep -rnE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.md" -- . 2>/dev/null | grep -v "example.com" | grep -v "example.org" | grep -v "users.noreply.github.com" | grep -v "security@teleagent-skills.dev" | grep -v "badge" | grep -v "img.shields.io" | grep -v "http" | grep -v "apache.org"; then
+            echo "::warning::Potential real email address detected (verify manually)"
+          fi
+          
+          echo "PII scan complete"
+
+      - name: Check for sensitive files
+        run: |
+          echo "Checking for sensitive file types..."
+          SENSITIVE_FOUND=0
+          
+          SENSITIVE_PATTERNS=(
+            ".env"
+            ".env.local"
+            ".env.production"
+            ".env.staging"
+            "credentials.json"
+            "service-account.json"
+            "*.pem"
+            "*.key"
+            "*.p12"
+            "*.pfx"
+            ".htpasswd"
+            ".netrc"
+          )
+          
+          for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            if find . -name "$pattern" -not -path "./.git/*" | grep -q .; then
+              echo "::error::Sensitive file detected: $pattern"
+              SENSITIVE_FOUND=1
+            fi
+          done
+          
+          if [ "$SENSITIVE_FOUND" -ne 0 ]; then
+            echo "Security scan FAILED: sensitive files detected"
+            exit 1
+          fi
+          echo "No sensitive files found"
+
+      - name: Check for large files
+        run: |
+          echo "Checking for unexpectedly large files..."
+          LARGE_FOUND=0
+          
+          # Find files larger than 1MB (excluding .git)
+          while IFS= read -r file; do
+            size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+            if [ "$size" -gt 1048576 ]; then
+              echo "::warning::Large file detected: $file ($(numfmt --to=iec $size))"
+              LARGE_FOUND=1
+            fi
+          done < <(find . -type f -not -path "./.git/*")
+          
+          if [ "$LARGE_FOUND" -ne 0 ]; then
+            echo "Large files detected — verify they don't contain embedded data"
+          fi
+          echo "Large file scan complete"
+
+      - name: Security scan summary
+        run: |
+          echo "========================================="
+          echo "  Security Scan Complete"
+          echo "========================================="
+          echo ""
+          echo "Checks performed:"
+          echo "  - Hardcoded secrets (API keys, tokens)"
+          echo "  - PII patterns (phone, ID, email)"
+          echo "  - Sensitive file types (.env, .key, .pem)"
+          echo "  - Unexpectedly large files"
+          echo ""
+          echo "If all checks passed, this PR is cleared for review."
