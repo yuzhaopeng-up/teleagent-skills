@@ -1,10 +1,10 @@
 # TeleAgent Skills
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-7-green.svg)]()
+[![Skills](https://img.shields.io/badge/Skills-5-green.svg)]()
 [![Compatible](https://img.shields.io/badge/Compatible-TeleAgent%20%7C%20Claude%20Code%20%7C%20Cursor%20%7C%20OpenClaw-orange)]()
 
-> **Production-ready Agent Skills for AI-powered business workflows** — Drop-in components with 4-Phase orchestration, configurable rules, multi-source evidence analysis, NL2SQL, interactive visualization, and **multi-agent communication** (Redis message bus + GitHub async handoff).
+> **Production-ready Agent Skills for AI-powered business workflows** — Drop-in components with 4-Phase orchestration, configurable rules, multi-source evidence analysis, NL2SQL, and interactive visualization.
 
 ## Why TeleAgent Skills?
 
@@ -33,8 +33,8 @@ cp -r teleagent-skills/skills/scoring-engine ~/.config/TeleAgent/skills/
 | [Data Aggregator](skills/data-aggregator/) | Statistical aggregation with YoY/MoM comparison | Business reporting, trend analysis, KPI dashboards |
 | [Visualization Renderer](skills/visualization-renderer/) | Auto chart recommendation + interactive ECharts HTML | Data dashboards, report visualization, presentation |
 | [NL2Query](skills/nl2-query/) | Natural language to structured query with confidence scoring | Self-service data query, business intelligence |
-| [Redis Message Bus](skills/redis-message-bus/) | Full-async Redis Pub/Sub + Stream message bus for agent clusters | Multi-agent broadcast, persistent queuing, service discovery |
-| [GitHub Async Handoff](skills/github-async-handoff/) | Decentralized async task handoff via GitHub Issues + Git branches | Cross-timezone collaboration, zero-deploy task queue, CI/CD handoffs |
+
+> Looking for multi-agent communication skills? See [agent-cluster-comm](https://github.com/yuzhaopeng-up/agent-cluster-comm) — Redis message bus, encrypted P2P, group chat bots, async handoff, and cluster health monitoring.
 
 ## Architecture
 
@@ -100,39 +100,14 @@ Output: SELECT plan, COUNT(*) AS ticket_count FROM support_ticket
         WHERE month='2026-05' GROUP BY plan ORDER BY ticket_count DESC LIMIT 10
 ```
 
-### Redis Message Bus — Multi-agent broadcast
-```python
-from redis_message_bus import MessageBus
-
-bus = MessageBus(redis_url="redis://localhost:6379/0", node_id="agent-alpha")
-await bus.start()
-await bus.publish("agent:broadcast", {"type": "config_update", "key": "threshold", "value": 0.85})
-await bus.send_to_stream("agent:persistent", {"task_id": "task-001", "action": "analyze"})
-```
-
-### GitHub Async Handoff — Cross-timezone task handoff
-```python
-from github_async_handoff import HandoffClient
-
-handoff = HandoffClient(repo="your-org/agent-workspace", token="ghp_xxxx")
-issue = handoff.create_handoff(
-    title="[Handoff] Data analysis report draft",
-    body="Draft complete, pending review",
-    labels=["handoff", "review-pending"],
-)
-# Another agent claims and completes:
-handoff.claim_handoff(issue_number=issue.number, assignee="agent-beta")
-handoff.complete_handoff(issue_number=issue.number, summary="Review passed")
-```
-
 ## Industry Use Cases
 
-| Industry | Scoring Engine | Evidence Chain | Data Aggregator | Visualization | NL2Query | Redis Msg Bus | GitHub Handoff |
-|----------|----------------|----------------|-----------------|---------------|----------|---------------|----------------|
-| Financial Services | Credit scoring, risk rating | Fraud investigation, claim verification | Portfolio analytics | Risk dashboards | "Show me high-risk accounts" | Risk event broadcast, analysis dispatch | Cross-timezone analyst handoff |
-| Manufacturing | Supplier evaluation | Equipment failure diagnosis | Production statistics | Quality dashboards | "Which line had most defects?" | IoT alert broadcast, production sync | CI/CD build-test-deploy chain |
-| Retail | Store scoring | Customer complaint analysis | Sales analytics | Performance boards | "Top 10 stores by revenue" | Promotion broadcast, inventory sync | Supplier-order async handoff |
-| Healthcare | Patient risk assessment | Adverse event investigation | Clinical statistics | Outcome dashboards | "Readmission rate by department" | Alert broadcast, shift handoff | Cross-team patient case handoff |
+| Industry | Scoring Engine | Evidence Chain | Data Aggregator | Visualization | NL2Query |
+|----------|----------------|----------------|-----------------|---------------|----------|
+| Financial Services | Credit scoring, risk rating | Fraud investigation, claim verification | Portfolio analytics | Risk dashboards | "Show me high-risk accounts" |
+| Manufacturing | Supplier evaluation | Equipment failure diagnosis | Production statistics | Quality dashboards | "Which line had most defects?" |
+| Retail | Store scoring | Customer complaint analysis | Sales analytics | Performance boards | "Top 10 stores by revenue" |
+| Healthcare | Patient risk assessment | Adverse event investigation | Clinical statistics | Outcome dashboards | "Readmission rate by department" |
 
 ## Contributing
 
