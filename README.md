@@ -130,3 +130,17 @@ Apache License 2.0 — Free for commercial and personal use.
 ---
 
 If you find these skills useful, please consider giving this repo a star! It helps others discover it.
+
+---
+
+## 🌐 Agent Skills Ecosystem
+
+This repo is part of the **Agent Skills** open-source ecosystem. Five repos work together to cover the full Agent development lifecycle:
+
+| Repository | Focus | Scale | Core Capabilities |
+|------------|-------|-------|-------------------|
+| [financial-ai-skills](https://github.com/yuzhaopeng-up/financial-ai-skills) | Financial industry Agent | 104 Skills | Invoice verification, budget control, risk compliance, wealth management |
+| [teleagent-skills](https://github.com/yuzhaopeng-up/teleagent-skills) (this repo) | General-purpose Agent | 5 Skills | Scoring engine, evidence chain, data aggregator, NL2Query, visualization |
+| [agent-cluster-comm](https://github.com/yuzhaopeng-up/agent-cluster-comm) | Agent cluster communication | 5 Skills | Encrypted P2P, Redis message bus, group chat bot, GitHub async handoff, health monitoring |
+| [skill-framework](https://github.com/yuzhaopeng-up/skill-framework) | Skill governance framework & templates | 208 cataloged | Skill catalog, governance templates, standardization tooling |
+| [fintech-h5-demos](https://github.com/yuzhaopeng-up/fintech-h5-demos) | Financial dashboard demos (zero-dependency HTML) | 12 demos | Interactive financial visualization, pure frontend implementation |
